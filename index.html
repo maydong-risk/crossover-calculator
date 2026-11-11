@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电动重卡融资 · 交叉点测算器｜电动重卡风控手记</title>
+<style>
+  :root {
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --teal: #0d9488;
+    --blue: #2563eb;
+    --amber: #d97706;
+    --red: #dc2626;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --grad: linear-gradient(135deg, #16a34a, #0d9488);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+
+  .hero { text-align: center; padding: 20px 16px 22px; }
+  .hero .brand { font-size: 13px; color: var(--muted); letter-spacing: 1px; margin-bottom: 6px; }
+  .hero h1 { font-size: 26px; font-weight: 700; }
+  .hero h1 .accent { color: var(--green); }
+  .hero p { color: var(--muted); margin-top: 6px; font-size: 14px; }
+
+  .notice {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;
+    padding: 11px 16px; font-size: 12.5px; color: #92400e;
+    margin-bottom: 18px; line-height: 1.7;
+  }
+
+  .grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border-radius: 14px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 15px; font-weight: 700; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .step {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--green); color: #fff; font-size: 13px; flex-shrink: 0;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 13px; color: var(--muted); margin-bottom: 5px;
+  }
+  .field label .hint { font-size: 11px; color: #9ca3af; font-weight: 400; }
+  .field input[type="number"], .field select {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 15px; color: var(--text);
+    background: #fff; outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .field input[type="number"]:focus, .field select:focus {
+    border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,0.12);
+  }
+
+  .seg {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+    background: #eef1f4; border-radius: 10px; padding: 4px;
+  }
+  .seg button {
+    border: none; background: transparent; padding: 8px 0;
+    font-size: 13.5px; color: var(--muted); border-radius: 8px; cursor: pointer;
+    transition: all .15s; font-weight: 500;
+  }
+  .seg button.active {
+    background: #fff; color: var(--green); font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.10);
+  }
+  .seg button:not(.active):hover { color: var(--text); }
+
+  .hidden { display: none !important; }
+
+  .result-hero {
+    background: var(--grad); color: #fff; border-radius: 16px; padding: 24px;
+    margin-bottom: 16px; box-shadow: 0 8px 24px rgba(22,163,74,0.20);
+  }
+  .result-hero .hero-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 560px) { .result-hero .hero-row { grid-template-columns: 1fr 1fr; } }
+  .result-hero .big-label { font-size: 12.5px; opacity: 0.92; }
+  .result-hero .big-num { font-size: 32px; font-weight: 800; line-height: 1.15; margin: 4px 0 2px; letter-spacing: -0.5px; }
+  .result-hero .big-num.small { font-size: 26px; }
+  .result-hero .big-sub { font-size: 12px; opacity: 0.9; }
+
+  .verdict {
+    margin-top: 16px; border-radius: 10px; padding: 11px 14px;
+    font-size: 13px; font-weight: 600; line-height: 1.55;
+    background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.28);
+  }
+
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 560px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric { background: var(--card); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .metric .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .metric .num { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .metric .num small { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .metric .sub { font-size: 11.5px; color: #9ca3af; margin-top: 3px; }
+
+  .chart-box canvas { width: 100%; height: auto; display: block; border-radius: 10px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  .readout { font-size: 13.5px; color: var(--text); line-height: 1.75; }
+  .readout strong { font-weight: 700; }
+  .readout .tag {
+    display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 5px;
+    font-weight: 600; margin: 0 2px;
+  }
+  .tag.green { background: #ecfdf5; color: #065f46; }
+  .tag.red { background: #fef2f2; color: #991b1b; }
+  .tag.amber { background: #fffbeb; color: #92400e; }
+
+  .footnote {
+    margin-top: 8px; padding: 14px 16px; background: var(--card); border-radius: 12px;
+    font-size: 12px; color: var(--muted); line-height: 1.8;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .foot { text-align: center; color: #9ca3af; font-size: 12px; padding: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="brand">电动重卡风控手记 · 工具</div>
+    <h1>融资<span class="accent">交叉点</span>测算器</h1>
+    <p>看剩余本金与车辆残值在第几个月交叉——首付、期限、保证金各起什么作用。</p>
+  </div>
+
+  <div class="notice">
+    本工具仅用于测算参考，不构成任何融资或授信建议。残值曲线为<strong>线性假设</strong>（上牌后价值线性折旧至期末残值率），真实残值受车型、电池衰减、市场供需影响，实际以专业评估为准。
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <h2><span class="step">1</span>融资方案</h2>
+
+      <div class="field">
+        <label>产品形态</label>
+        <div class="seg" id="formSeg">
+          <button type="button" data-form="lease" class="active">融资租赁</button>
+          <button type="button" data-form="loan">车贷</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>车价（万元）</label>
+        <input type="number" id="car" value="60" min="10" max="200" step="1">
+      </div>
+
+      <div class="field" id="taxField">
+        <label>购置税（%）<span class="hint">新能源减半</span></label>
+        <input type="number" id="taxRate" value="4.4" min="0" max="20" step="0.1">
+      </div>
+
+      <div class="field">
+        <label>首付比例（%）</label>
+        <input type="number" id="down" value="10" min="0" max="90" step="1">
+      </div>
+
+      <div class="field" id="marginField">
+        <label>保证金（%）<span class="hint">按融资额收 · 不冲本金</span></label>
+        <input type="number" id="marginRate" value="5" min="0" max="30" step="1">
+      </div>
+
+      <div class="field">
+        <label>年化利率（%）</label>
+        <input type="number" id="rate" value="8" min="1" max="24" step="0.1">
+      </div>
+
+      <div class="field">
+        <label>期限（月）</label>
+        <select id="months">
+          <option value="12">12 个月（1 年）</option>
+          <option value="24">24 个月（2 年）</option>
+          <option value="36" selected>36 个月（3 年）</option>
+          <option value="48">48 个月（4 年）</option>
+          <option value="60">60 个月（5 年）</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>上牌后价值（%）<span class="hint">假设·可调</span></label>
+        <input type="number" id="regRate" value="70" min="30" max="95" step="1">
+      </div>
+
+      <div class="field">
+        <label>期末残值率（%）<span class="hint">随期限联动·可改</span></label>
+        <input type="number" id="endRate" value="30" min="5" max="60" step="1">
+      </div>
+    </div>
+
+    <div>
+
+      <div class="result-hero">
+        <div class="hero-row">
+          <div>
+            <div class="big-label">风险交叉点</div>
+            <div class="big-num" id="mCross">—</div>
+            <div class="big-sub" id="mCrossSub">—</div>
+          </div>
+          <div>
+            <div class="big-label">月供</div>
+            <div class="big-num small" id="mPayment">—</div>
+            <div class="big-sub">等额本息</div>
+          </div>
+          <div>
+            <div class="big-label">IRR（实际年化）</div>
+            <div class="big-num small" id="mIrr">—</div>
+            <div class="big-sub">资方视角</div>
+          </div>
+        </div>
+        <div class="verdict" id="verdict">—</div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">融资本金</div>
+          <div class="num" id="mPrincipal">—</div>
+          <div class="sub" id="mPrincipalSub">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">首付金额</div>
+          <div class="num" id="mDown">—</div>
+          <div class="sub">一次性支付</div>
+        </div>
+        <div class="metric">
+          <div class="label">总利息</div>
+          <div class="num" id="mInterest">—</div>
+          <div class="sub">全周期</div>
+        </div>
+        <div class="metric">
+          <div class="label">期末残值</div>
+          <div class="num" id="mResidual">—</div>
+          <div class="sub">按裸车价计</div>
+        </div>
+        <div class="metric">
+          <div class="label">保证金</div>
+          <div class="num" id="mMargin">—</div>
+          <div class="sub" id="mMarginSub">期末退还</div>
+        </div>
+        <div class="metric">
+          <div class="label">上牌后价值</div>
+          <div class="num" id="mResStart">—</div>
+          <div class="sub">残值起点</div>
+        </div>
+      </div>
+
+      <div class="card chart-box">
+        <h2><span class="step">2</span>交叉曲线</h2>
+        <div class="legend">
+          <span><span class="dot" style="background:#dc2626;"></span>剩余本金</span>
+          <span><span class="dot" style="background:#0d9488;"></span>车辆残值（线性假设）</span>
+          <span><span class="dot" style="background:rgba(220,38,38,0.16);border:1px solid #dc2626;"></span>风险敞口期（本金＞残值）</span>
+        </div>
+        <canvas id="chart" width="760" height="430" role="img" aria-label="剩余本金曲线与残值曲线的交叉图"></canvas>
+      </div>
+
+      <div class="card">
+        <h2><span class="step">3</span>怎么看这张图</h2>
+        <div class="readout" id="readout">—</div>
+      </div>
+
+      <div class="footnote">
+        口径说明：残值按裸车价计算（不含购置税）；融资租赁本金含购置税；保证金按融资额（扣首付）收取、不冲本金、不影响交叉点、只影响 IRR；IRR 为资方视角的实际年化（有效年化，等价 Excel XIRR，输入的年利率 8% 为名义报价、其实际年化约 8.30%），残值不计入期末现金流，保证金期末退还的占用收益已计入 IRR。利率、首付、期限、残值率均为市场常用区间，具体以实际融资方案为准。
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">电动重卡风控手记 · 交叉点测算器 · 仅测算参考，不构成任何建议</div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  var form = 'lease';
+
+  function val(id) { var v = parseFloat($(id).value); return isNaN(v) ? 0 : v; }
+
+  function fmtWan(v) {
+    if (Math.abs(v) >= 100) return v.toFixed(0);
+    return v.toFixed(1);
+  }
+  function fmtMoneyWan(v) { return v.toFixed(2); }
+  function fmtYuan(v) { return Math.round(v * 10000).toLocaleString('zh-CN'); }
+
+  function balance(P, r, n, t) {
+    if (t <= 0) return P;
+    if (t >= n) return 0;
+    var q = 1 + r;
+    return P * (Math.pow(q, n) - Math.pow(q, t)) / (Math.pow(q, n) - 1);
+  }
+
+  function irrMonthly(cf) {
+    var lo = 0, hi = 2.0;
+    function npv(r) {
+      var s = 0;
+      for (var i = 0; i < cf.length; i++) s += cf[i] / Math.pow(1 + r, i);
+      return s;
+    }
+    var flo = npv(lo), fhi = npv(hi);
+    if (flo * fhi > 0) return null;
+    for (var k = 0; k < 200; k++) {
+      var mid = (lo + hi) / 2;
+      var f = npv(mid);
+      if (f > 0) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  function compute() {
+    var car = val('car');
+    var taxRate = form === 'lease' ? val('taxRate') / 100 : 0;
+    var downRate = val('down') / 100;
+    var marginRate = form === 'lease' ? val('marginRate') / 100 : 0;
+    var rate = val('rate') / 100;
+    var n = parseInt($('months').value, 10);
+    var regRate = val('regRate') / 100;
+    var endRate = val('endRate') / 100;
+
+    var tax = car * taxRate;
+    var total = car + tax;
+    var downAmt = total * downRate;
+    var principal = total * (1 - downRate);
+    var margin = principal * marginRate;  // 保证金按融资额（扣首付）收取
+
+    var r = rate / 12;
+    var q = 1 + r;
+    var payment = 0;
+    if (r > 0) {
+      payment = principal * r * Math.pow(q, n) / (Math.pow(q, n) - 1);
+    } else {
+      payment = principal / n;
+    }
+    var totalInterest = payment * n - principal;
+
+    var resStart = car * regRate;
+    var resEnd = car * endRate;
+    function residual(t) { return resStart - (resStart - resEnd) * t / n; }
+
+    var crossMonth = null;
+    if (principal <= resStart) {
+      crossMonth = 0;
+    } else {
+      for (var t = 1; t <= n; t++) {
+        if (balance(principal, r, n, t) <= residual(t)) { crossMonth = t; break; }
+      }
+    }
+
+    var cf = [];
+    cf.push(-(principal - margin));
+    for (var i = 1; i < n; i++) cf.push(payment);
+    cf.push(payment - margin);
+    var irrM = irrMonthly(cf);
+    var irrA = irrM == null ? null : (Math.pow(1 + irrM, 12) - 1) * 100;  // 实际年化（有效年化，等价 Excel XIRR）
+
+    return {
+      car: car, tax: tax, total: total, downAmt: downAmt, principal: principal,
+      margin: margin, payment: payment, totalInterest: totalInterest,
+      resStart: resStart, resEnd: resEnd, residual: residual,
+      crossMonth: crossMonth, irrA: irrA, r: r, n: n
+    };
+  }
+
+  function render() {
+    var d = compute();
+
+    $('mPayment').innerHTML = fmtYuan(d.payment) + '<small> 元/月</small>';
+    $('mIrr').innerHTML = d.irrA == null ? '—' : d.irrA.toFixed(2) + '<small> %</small>';
+    $('mPrincipal').innerHTML = fmtMoneyWan(d.principal) + '<small> 万</small>';
+    $('mPrincipalSub').textContent = form === 'lease' ? '含购置税 ' + fmtMoneyWan(d.tax) + ' 万' : '车价融资额';
+    $('mDown').innerHTML = fmtMoneyWan(d.downAmt) + '<small> 万</small>';
+    $('mInterest').innerHTML = fmtMoneyWan(d.totalInterest) + '<small> 万</small>';
+    $('mResidual').innerHTML = fmtMoneyWan(d.resEnd) + '<small> 万</small>';
+    $('mResStart').innerHTML = fmtMoneyWan(d.resStart) + '<small> 万</small>';
+    $('mMargin').innerHTML = form === 'lease' ? fmtMoneyWan(d.margin) + '<small> 万</small>' : '0 <small>万</small>';
+    $('mMarginSub').textContent = form === 'lease' ? '期末退还' : '车贷无保证金';
+
+    var verdict = $('verdict');
+    if (d.crossMonth === 0) {
+      $('mCross').textContent = '无敞口期';
+      $('mCrossSub').textContent = '期初本金已≤残值';
+      verdict.textContent = '首付后本金已不高于上牌后价值，从放款起就没有风险敞口期。';
+    } else if (d.crossMonth === null) {
+      $('mCross').textContent = '全程有敞口';
+      $('mCrossSub').textContent = '期限内未交叉';
+      verdict.textContent = '剩余本金在整个期限内始终高于残值，处置车辆无法覆盖剩余本金，风险敞口贯穿始终。';
+    } else {
+      $('mCross').textContent = '第 ' + d.crossMonth + ' 个月';
+      var pct = (d.crossMonth / d.n * 100).toFixed(0);
+      $('mCrossSub').textContent = '敞口期占期限 ' + pct + '%';
+      verdict.textContent = '前 ' + d.crossMonth + ' 个月剩余本金高于残值，是风险敞口期；第 ' + d.crossMonth + ' 个月起处置车辆开始能覆盖剩余本金。';
+    }
+
+    renderReadout(d);
+    drawChart(d);
+  }
+
+  function renderReadout(d) {
+    var el = $('readout');
+    var s = '';
+    s += '这台车车价 <strong>' + fmtWan(d.car) + ' 万</strong>';
+    if (form === 'lease') s += '，购置税 ' + fmtMoneyWan(d.tax) + ' 万计入本金';
+    s += '。首付 ' + fmtMoneyWan(d.downAmt) + ' 万后，融资本金 <strong>' + fmtMoneyWan(d.principal) + ' 万</strong>，月供 ' + fmtYuan(d.payment) + ' 元。';
+    s += '<br><br>';
+
+    if (d.crossMonth === 0) {
+      s += '首付后本金 ' + fmtMoneyWan(d.principal) + ' 万，已经<strong>不高于上牌后价值</strong>（' + fmtMoneyWan(d.resStart) + ' 万），所以从放款起就没有风险敞口期——' + '<span class="tag green">全程无敞口</span>' + '。';
+    } else if (d.crossMonth === null) {
+      s += '这笔融资的剩余本金，在整个期限内<strong>始终高于残值</strong>，' + '<span class="tag red">全程有敞口</span>' + '。说明一旦客户违约，即使处置车辆也覆盖不了剩余本金，风险敞口贯穿始终。';
+    } else {
+      s += '前 <strong>' + d.crossMonth + ' 个月</strong>，剩余本金高于残值（红色区域），是' + '<span class="tag red">风险敞口期</span>' + '；第 ' + d.crossMonth + ' 个月起本金降到残值以下，处置车辆开始能覆盖剩余本金。';
+      s += '<br><br>';
+      s += '想缩短敞口期，最直接的是<strong>提高首付</strong>（本金曲线整体下移）；<strong>保证金不冲本金、对交叉点零影响</strong>（它只在违约时提供一笔可扣现金）；<strong>拉长期限</strong>则残值率下降、敞口期反而拉长。';
+    }
+    el.innerHTML = s;
+  }
+
+  function drawChart(d) {
+    var cv = $('chart');
+    var ctx = cv.getContext('2d');
+    var W = cv.width, H = cv.height;
+    ctx.clearRect(0, 0, W, H);
+
+    var padL = 56, padR = 24, padT = 22, padB = 46;
+    var pw = W - padL - padR, ph = H - padT - padB;
+
+    var maxY = Math.max(d.car * 1.12, d.principal * 1.05, d.resStart * 1.08);
+    var niceMax = Math.ceil(maxY / 10) * 10;
+
+    function x(t) { return padL + (t / d.n) * pw; }
+    function y(v) { return padT + ph - (v / niceMax) * ph; }
+
+    ctx.font = '12px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.textBaseline = 'middle';
+
+    for (var g = 0; g <= niceMax; g += 10) {
+      var gy = y(g);
+      ctx.strokeStyle = '#eef1f4';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + pw, gy); ctx.stroke();
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'right';
+      ctx.fillText(g + '', padL - 8, gy);
+    }
+    for (var m = 0; m <= d.n; m += Math.max(1, Math.round(d.n / 6))) {
+      var gx = x(m);
+      ctx.strokeStyle = '#eef1f4';
+      ctx.beginPath(); ctx.moveTo(gx, padT); ctx.lineTo(gx, padT + ph); ctx.stroke();
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'center';
+      ctx.fillText(m + '', gx, padT + ph + 18);
+    }
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + ph); ctx.lineTo(padL + pw, padT + ph); ctx.stroke();
+
+    for (var t = 0; t < d.n; t++) {
+      var b0 = balance(d.principal, d.r, d.n, t);
+      var b1 = balance(d.principal, d.r, d.n, t + 1);
+      var r0 = d.residual(t), r1 = d.residual(t + 1);
+      if (b0 > r0 && b1 > r1) {
+        ctx.beginPath();
+        ctx.moveTo(x(t), y(b0));
+        ctx.lineTo(x(t + 1), y(b1));
+        ctx.lineTo(x(t + 1), y(r1));
+        ctx.lineTo(x(t), y(r0));
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.09)';
+        ctx.fill();
+      }
+    }
+
+    ctx.strokeStyle = '#0d9488';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(d.resStart));
+    for (var tt = 1; tt <= d.n; tt++) ctx.lineTo(x(tt), y(d.residual(tt)));
+    ctx.stroke();
+
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(d.principal));
+    for (var k = 1; k <= d.n; k++) ctx.lineTo(x(k), y(balance(d.principal, d.r, d.n, k)));
+    ctx.stroke();
+
+    if (d.crossMonth !== null && d.crossMonth > 0 && d.crossMonth < d.n) {
+      var cx = x(d.crossMonth), cy = y(d.residual(d.crossMonth));
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath(); ctx.arc(cx, cy, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, 5.5, 0, Math.PI * 2); ctx.stroke();
+
+      var label = '交叉点 · 第 ' + d.crossMonth + ' 个月';
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '600 12.5px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = d.crossMonth > d.n * 0.55 ? 'right' : 'left';
+      var lx = d.crossMonth > d.n * 0.55 ? cx - 10 : cx + 10;
+      var ly = Math.max(padT + 10, cy - 12);
+      ctx.fillText(label, lx, ly);
+    }
+
+    ctx.fillStyle = '#6b7280';
+    ctx.textAlign = 'left';
+    ctx.font = '11.5px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText('金额（万元）', padL + 6, padT - 6);
+    ctx.textAlign = 'center';
+    ctx.fillText('期数（月）', padL + pw / 2, H - 10);
+  }
+
+  $('formSeg').addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    form = btn.getAttribute('data-form');
+    var btns = this.querySelectorAll('button');
+    btns.forEach(function (b) { b.classList.toggle('active', b === btn); });
+    $('taxField').classList.toggle('hidden', form !== 'lease');
+    $('marginField').classList.toggle('hidden', form !== 'lease');
+    render();
+  });
+
+  var END_RATE = { 12: 38, 24: 34, 36: 30, 48: 26, 60: 22 };
+  $('months').addEventListener('change', function () {
+    var m = parseInt(this.value, 10);
+    $('endRate').value = END_RATE[m];
+    render();
+  });
+
+  ['car', 'taxRate', 'down', 'marginRate', 'rate', 'regRate', 'endRate'].forEach(function (id) {
+    $(id).addEventListener('input', render);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
